@@ -4,11 +4,13 @@ import { CompanyHeader } from "./components/CompanyHeader";
 import { Tabs } from "./components/Tabs";
 import { CapexTracker } from "./components/CapexTracker";
 import { SubsidiaryTracker } from "./components/SubsidiaryTracker";
+import { MunsChat } from "./components/MunsChat";
 import { findCompany } from "./data/companies";
 
 const TABS = [
   { id: "capex", label: "Capex Tracker" },
   { id: "subs", label: "Subsidiary & Future Upside" },
+  { id: "chat", label: "MUNS Chat" },
 ];
 
 function App() {
@@ -36,11 +38,9 @@ function App() {
         </div>
 
         <div className="mt-6">
-          {active === "capex" ? (
-            <CapexTracker company={company} />
-          ) : (
-            <SubsidiaryTracker company={company} />
-          )}
+          {active === "capex" && <CapexTracker company={company} />}
+          {active === "subs" && <SubsidiaryTracker company={company} />}
+          {active === "chat" && <MunsChat />}
         </div>
 
         <footer className="mt-16 border-t border-divider pt-6 text-xs text-ink-400">
