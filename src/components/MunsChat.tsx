@@ -28,8 +28,33 @@ const NOISE_PATTERNS: RegExp[] = [
 const stripTags = (value: string) => value.replace(/<[^>]+>/g, "").trim();
 const isNoise = (line: string) => NOISE_PATTERNS.some((rx) => rx.test(line));
 
+// Drop entire wrapper sections (tags + inner content) that are not the answer.
+const DROP_SECTION_TAGS = ["task", "tool", "sources", "eos", "thinking", "trace"];
+
+const dropWrapperSections = (raw: string): string => {
+  let out = raw;
+  for (const tag of DROP_SECTION_TAGS) {
+    const paired = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}>`, "gi");
+    out = out.replace(paired, "");
+    const selfClosing = new RegExp(`<${tag}\\b[^>]*\\/?>`, "gi");
+    out = out.replace(selfClosing, "");
+  }
+  return out;
+};
+
+// Prefer the canonical answer when wrapped in <ans>...</ans>; otherwise drop
+// known wrapper sections (task/tool/sources/eos) before downstream parsing.
+const isolateAnswer = (raw: string): string => {
+  const ansMatches = [...raw.matchAll(/<ans\b[^>]*>([\s\S]*?)<\/ans>/gi)];
+  if (ansMatches.length > 0) {
+    return ansMatches.map((m) => m[1]).join("\n\n").trim();
+  }
+  return dropWrapperSections(raw).trim();
+};
+
 const cleanText = (raw: string): string => {
-  const lines = raw
+  const isolated = isolateAnswer(raw);
+  const lines = isolated
     .split("\n")
     .map(stripTags)
     .filter((l) => l.length > 0)
@@ -278,55 +303,7 @@ const statusTone = (value: string) => {
   return null;
 };
 
-// -------------------- Block Renderers --------------------
-
-const HeadingBlock = ({ level, text }: { level: number; text: string }) => {
-  if (level <= 1)
-    return (
-      <h2 className="mt-2 text-[20px] font-semibold tracking-tight text-ink-900">
-        {renderInline(text)}
-      </h2>
-    );
-  if (level === 2)
-    return (
-      <h3 className="mt-2 text-[17px] font-semibold text-ink-900">
-        {renderInline(text)}
-      </h3>
-    );
-  return (
-    <h4 className="mt-2 text-[14px] font-semibold uppercase tracking-[0.12em] text-ink-500">
-      {renderInline(text)}
-    </h4>
-  );
-};
-
-const ParagraphBlock = ({ text }: { text: string }) => (
-  <p className="text-sm leading-relaxed text-ink-700">{renderInline(text)}</p>
-);
-
-const ListBlock = ({ ordered, items }: { ordered: boolean; items: string[] }) => {
-  const commonClasses = "space-y-1.5 pl-5 text-sm leading-relaxed text-ink-700";
-  if (ordered) {
-    return (
-      <ol className={`${commonClasses} list-decimal`}>
-        {items.map((item, idx) => (
-          <li key={`li-${idx}`} className="marker:text-ink-400">
-            {renderInline(item)}
-          </li>
-        ))}
-      </ol>
-    );
-  }
-  return (
-    <ul className={`${commonClasses} list-disc`}>
-      {items.map((item, idx) => (
-        <li key={`li-${idx}`} className="marker:text-ink-400">
-          {renderInline(item)}
-        </li>
-      ))}
-    </ul>
-  );
-};
+// -------------------- Table Renderer --------------------
 
 const TableBlock = ({ table }: { table: ParsedTable }) => {
   const statusColIdx = table.columns.findIndex((c) => c.toLowerCase().includes("status"));
@@ -369,30 +346,22 @@ const TableBlock = ({ table }: { table: ParsedTable }) => {
   );
 };
 
-const CodeBlock = ({ text }: { text: string }) => (
-  <pre className="overflow-x-auto rounded-xl2 border border-divider bg-ink-900 p-4 text-[12px] text-ink-100">
-    <code>{text}</code>
-  </pre>
-);
-
 const RenderedOutput = ({ content }: { content: string }) => {
-  const blocks = useMemo(() => parseBlocks(content), [content]);
-  if (blocks.length === 0) {
-    return <p className="text-sm text-ink-400">No content.</p>;
+  const tables = useMemo(
+    () =>
+      parseBlocks(content).filter(
+        (b): b is Extract<Block, { kind: "table" }> => b.kind === "table",
+      ),
+    [content],
+  );
+  if (tables.length === 0) {
+    return <p className="text-sm text-ink-400">No table in the response.</p>;
   }
   return (
-    <div className="space-y-3">
-      {blocks.map((block, idx) => {
-        const key = `block-${idx}`;
-        if (block.kind === "heading")
-          return <HeadingBlock key={key} level={block.level} text={block.text} />;
-        if (block.kind === "paragraph")
-          return <ParagraphBlock key={key} text={block.text} />;
-        if (block.kind === "list")
-          return <ListBlock key={key} ordered={block.ordered} items={block.items} />;
-        if (block.kind === "table") return <TableBlock key={key} table={block.table} />;
-        return <CodeBlock key={key} text={block.text} />;
-      })}
+    <div className="space-y-4">
+      {tables.map((block, idx) => (
+        <TableBlock key={`table-${idx}`} table={block.table} />
+      ))}
     </div>
   );
 };
