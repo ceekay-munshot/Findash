@@ -1,4 +1,11 @@
-import type { CapexProject, CapexStatus, TimingView } from "../types";
+import type {
+  CapexProject,
+  CapexStatus,
+  RevenueStage,
+  Subsidiary,
+  SubsidiaryStatus,
+  TimingView,
+} from "../types";
 
 // -------------------- Config --------------------
 
@@ -9,6 +16,9 @@ export const MUNS_TOKEN =
 
 export const CAPEX_TABLE_PROMPT =
   "Make one table with Factual data only to show project status of company- Get the latest verified data( Announcement , Annual report , Call transcript , earnings PPT) possible .Follow the column order exactly.-Serial No. | Project | Segment | Capex | Current timeline note | Current status | Latest timing view ( with dates if available ) | Capacity addition | Source Do not add extra columns. Do not merge columns. Do not explain outside the table.";
+
+export const SUBSIDIARY_TABLE_PROMPT =
+  "Make one table only with factual datas and Dates to show subsidiaries and future upside of the company . Get the latest verified data ( Announcement , Annual report , Call transcript , earnings PPT) Do not add notes outside the table.use clear and simple language .Do not add extra columns. Do not merge columns. Do not explain outside the table. Follow this column order exactly: Serial no. | Name | Business | Stake | Current Status| Next date of progress | Revenue stage | Strategic link | Source";
 
 // -------------------- API --------------------
 
@@ -238,6 +248,98 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9\s-_]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-") || "row";
+
+// -------------------- Subsidiary Mapping --------------------
+
+const mapSubsidiaryStatus = (raw: string): SubsidiaryStatus => {
+  const v = raw.toLowerCase();
+  if (/holding|spv|investment vehicle|wholly[- ]owned subsidiary structure/.test(v)) {
+    return "Holding structure";
+  }
+  if (/optionality|optional|strategic option|long[- ]term/.test(v)) {
+    return "Optionality";
+  }
+  if (
+    /(early|nascent|incubat|under construction|building|ramping|ramp[- ]?up|initial|in progress|pre[- ]?launch)/.test(
+      v,
+    )
+  ) {
+    return "Early";
+  }
+  if (/(operating|operational|active|live|running)/.test(v)) {
+    return "Operating";
+  }
+  return "Operating";
+};
+
+const mapRevenueStage = (raw: string): RevenueStage => {
+  const v = raw.toLowerCase();
+  if (/dormant|inactive|wind[- ]?down/.test(v)) return "Dormant";
+  if (/pilot|trial|pre[- ]?commercial/.test(v)) return "Pilot";
+  if (/pre[- ]?revenue|no revenue|yet to generate|under development/.test(v)) {
+    return "Pre-revenue";
+  }
+  if (/revenue[- ]?generating|generating revenue|operating revenue|active revenue|live/.test(v)) {
+    return "Revenue-generating";
+  }
+  return "Pre-revenue";
+};
+
+const isWhollyOwned = (stake: string): boolean => {
+  const v = stake.toLowerCase().replace(/\s+/g, "");
+  if (/wholly|100%/.test(v)) return true;
+  const num = parseFloat(stake.replace(/[^\d.]/g, ""));
+  return Number.isFinite(num) && num >= 99.99;
+};
+
+const groupingFor = (
+  status: SubsidiaryStatus,
+  stage: RevenueStage,
+): Subsidiary["grouping"] => {
+  if (stage === "Revenue-generating" && status === "Operating") return "Core Earnings";
+  if (status === "Holding structure" || status === "Optionality" || stage === "Dormant") {
+    return "Adjacent / Optional";
+  }
+  if (stage === "Pilot" || stage === "Pre-revenue" || status === "Early") {
+    return "Forward Integration";
+  }
+  return "Adjacent / Optional";
+};
+
+export const toSubsidiaries = (table: ParsedTable): Subsidiary[] => {
+  const cols = table.columns;
+  const nameIdx = findColumnIndex(cols, "name");
+  const businessIdx = findColumnIndex(cols, "business");
+  const stakeIdx = findColumnIndex(cols, "stake");
+  const statusIdx = findColumnIndex(cols, "current status", "status");
+  const stageIdx = findColumnIndex(cols, "revenue stage", "stage");
+  const linkIdx = findColumnIndex(cols, "strategic link", "link");
+
+  const cell = (row: string[], idx: number) => (idx >= 0 ? row[idx] || "" : "");
+
+  return table.rows
+    .filter((row) => cell(row, nameIdx).trim().length > 0)
+    .map((row, idx) => {
+      const name = cell(row, nameIdx);
+      const stake = cell(row, stakeIdx) || "—";
+      const status = mapSubsidiaryStatus(cell(row, statusIdx));
+      const revenueStage = mapRevenueStage(cell(row, stageIdx));
+      const wholly = isWhollyOwned(stake);
+      const grouping = groupingFor(status, revenueStage);
+      return {
+        id: `${idx + 1}-${slugify(name)}`,
+        name,
+        business: cell(row, businessIdx) || "—",
+        stake,
+        status,
+        revenueStage,
+        strategicLink: cell(row, linkIdx) || "—",
+        wholly,
+        strategicAdjacency: grouping !== "Core Earnings",
+        grouping,
+      };
+    });
+};
 
 export const toCapexProjects = (table: ParsedTable): CapexProject[] => {
   const cols = table.columns;
