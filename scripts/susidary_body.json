@@ -1,0 +1,19 @@
+{
+  "tasks": [
+    "Make one table only with factual datas and Dates to show subsidiaries and future upside of the company . Get the latest verified data ( Announcement , Annual report , Call transcript , earnings PPT) Do not add notes outside the table.use clear and simple language .Do not add extra columns. Do not merge columns. Do not explain outside the table. Follow this column order exactly: Serial no. | Name | Business | Stake | Current Status| Next date of progress | Revenue stage | Strategic link | Source"
+  ],
+  "query_context": {
+    "TICKER_SYMBOL": ["RELIANCE"],
+    "ANNOUNCEMENT_FORM_TYPE": "all",
+    "DOCUMENT_IDS": [],
+    "CATEGORIES": [],
+    "WEB_SEARCH_ENABLED": true,
+    "CONTEXT_COMPANY_NAME": ["Reliance Industries Limited"],
+    "COUNTRY": ["India"],
+    "GET_ANNOUNCEMENTS_ENABLED": false,
+    "chatHistory": [],
+    "mode": "fast"
+  },
+  "autoAddUpcoming": false,
+  "urls": []
+}
