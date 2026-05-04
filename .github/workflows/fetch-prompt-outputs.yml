@@ -1,0 +1,67 @@
+name: Fetch prompt outputs (one-shot debug)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Fetch capex prompt output
+        run: |
+          set -o pipefail
+          curl -sS \
+            -o capex.txt \
+            -w "\nHTTP_STATUS=%{http_code}\n" \
+            -X POST https://devde.muns.io/chat/chat-muns \
+            -H "accept: */*" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ZWE5ZGMyYi0xZDBmLTQ2MzctOGE2Ny0wM2VhNzFmMGYyY2YiLCJlbWFpbCI6Im5hZGFtc2FsdWphQGdtYWlsLmNvbSIsIm9yZ0lkIjoiMSIsImF1dGhvcml0eSI6InVzZXIiLCJpYXQiOjE3NzY2NzkyMzgsImV4cCI6MTc3NzExMTIzOH0.DjD6IxGL5EJ4mWeXO8bj8vpBNx0RaipmzBqDDbfqEdg" \
+            -H "Content-Type: application/json" \
+            --data @scripts/capex_body.json \
+            --max-time 600
+          echo "---- capex.txt size ----"
+          wc -c capex.txt
+
+      - name: Fetch subsidiary prompt output
+        run: |
+          set -o pipefail
+          curl -sS \
+            -o susidary.txt \
+            -w "\nHTTP_STATUS=%{http_code}\n" \
+            -X POST https://devde.muns.io/chat/chat-muns \
+            -H "accept: */*" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ZWE5ZGMyYi0xZDBmLTQ2MzctOGE2Ny0wM2VhNzFmMGYyY2YiLCJlbWFpbCI6Im5hZGFtc2FsdWphQGdtYWlsLmNvbSIsIm9yZ0lkIjoiMSIsImF1dGhvcml0eSI6InVzZXIiLCJpYXQiOjE3NzY2NzkyMzgsImV4cCI6MTc3NzExMTIzOH0.DjD6IxGL5EJ4mWeXO8bj8vpBNx0RaipmzBqDDbfqEdg" \
+            -H "Content-Type: application/json" \
+            --data @scripts/susidary_body.json \
+            --max-time 600
+          echo "---- susidary.txt size ----"
+          wc -c susidary.txt
+
+      - name: Upload as artifact (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prompt-outputs
+          path: |
+            capex.txt
+            susidary.txt
+
+      - name: Commit raw outputs back to branch
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add capex.txt susidary.txt
+          if git diff --cached --quiet; then
+            echo "no changes to commit"
+            exit 0
+          fi
+          git commit -m "Add raw capex.txt and susidary.txt prompt outputs (RELIANCE debug run)"
+          git push origin HEAD:${GITHUB_REF_NAME}
