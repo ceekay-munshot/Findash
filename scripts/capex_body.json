@@ -1,0 +1,17 @@
+{
+  "tasks": [
+    "You are a financial research analyst. Build a Capex project tracker for Reliance Industries Limited (ticker: RELIANCE). Return a single Markdown table with these EXACT columns: Project | Segment | Capex (Rs cr) | Current timeline note | Current status | Latest timing view | Capacity addition. For 'Current status' use one of: Executing, Operational, Planning, Feasibility, Delayed, Uncertain. For 'Latest timing view' use one of: Near-term, Medium-term, Long-term, Unclear. List the major disclosed capex projects across all segments (New Energy, Oil-to-Chemicals, Retail, Digital/Jio, Upstream, etc.). Use the latest publicly disclosed numbers and management commentary. After the table, add a short 'Sources' section with links."
+  ],
+  "query_context": {
+    "ANNOUNCEMENT_FORM_TYPE": "all",
+    "DOCUMENT_IDS": [],
+    "CATEGORIES": [],
+    "WEB_SEARCH_ENABLED": true,
+    "COUNTRY": ["India"],
+    "GET_ANNOUNCEMENTS_ENABLED": false,
+    "chatHistory": [],
+    "mode": "fast"
+  },
+  "autoAddUpcoming": false,
+  "urls": []
+}
