@@ -1,0 +1,19 @@
+{
+  "tasks": [
+    "Make one table with Factual data only to show project status of company- Get the latest verified data( Announcement , Annual report , Call transcript , earnings PPT) possible .Follow the column order exactly.-Serial No. | Project | Segment | Capex | Current timeline note | Current status | Latest timing view ( with dates if available ) | Capacity addition | Source Do not add extra columns. Do not merge columns. Do not explain outside the table."
+  ],
+  "query_context": {
+    "TICKER_SYMBOL": ["RELIANCE"],
+    "ANNOUNCEMENT_FORM_TYPE": "all",
+    "DOCUMENT_IDS": [],
+    "CATEGORIES": [],
+    "WEB_SEARCH_ENABLED": true,
+    "CONTEXT_COMPANY_NAME": ["Reliance Industries Limited"],
+    "COUNTRY": ["India"],
+    "GET_ANNOUNCEMENTS_ENABLED": false,
+    "chatHistory": [],
+    "mode": "fast"
+  },
+  "autoAddUpcoming": false,
+  "urls": []
+}
