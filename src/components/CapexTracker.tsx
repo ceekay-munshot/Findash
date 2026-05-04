@@ -13,6 +13,8 @@ type Props = { company: Company };
 export function CapexTracker({ company }: Props) {
   const projects = company.capex;
   const total = projects.reduce((a, p) => a + p.capexRsCr, 0);
+  const disclosedCount = projects.filter((p) => p.capexRsCr > 0).length;
+  const undisclosedCount = projects.length - disclosedCount;
 
   const sumBy = (pred: (s: string) => boolean) =>
     projects.filter((p) => pred(p.status)).reduce((a, p) => a + p.capexRsCr, 0);
@@ -75,7 +77,11 @@ export function CapexTracker({ company }: Props) {
         <KpiCard
           label="Total Capex"
           value={fmtCr(total)}
-          subtext="Based on disclosed projects"
+          subtext={
+            undisclosedCount > 0
+              ? `Across ${disclosedCount} disclosed of ${projects.length} projects · ${undisclosedCount} not disclosed`
+              : "Based on disclosed projects"
+          }
           tone="neutral"
         />
         <KpiCard
@@ -150,7 +156,11 @@ export function CapexTracker({ company }: Props) {
                   {p.segment}
                 </td>
                 <td className="border-b border-divider px-4 py-4 text-right font-medium text-ink-900 whitespace-nowrap tabular-nums">
-                  {p.capexRsCr.toLocaleString("en-IN")}
+                  {p.capexRsCr > 0 ? (
+                    p.capexRsCr.toLocaleString("en-IN")
+                  ) : (
+                    <span className="text-ink-400 font-normal">Not disclosed</span>
+                  )}
                 </td>
                 <td className="border-b border-divider px-4 py-4 text-ink-500 leading-relaxed max-w-[280px]">
                   {p.timelineNote}

@@ -15,7 +15,7 @@ export const MUNS_TOKEN =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ZWE5ZGMyYi0xZDBmLTQ2MzctOGE2Ny0wM2VhNzFmMGYyY2YiLCJlbWFpbCI6Im5hZGFtc2FsdWphQGdtYWlsLmNvbSIsIm9yZ0lkIjoiMSIsImF1dGhvcml0eSI6ImFkbWluIiwiaWF0IjoxNzc3NTUwOTQyLCJleHAiOjE3Nzc5ODI5NDJ9.VJt45Atc-5jLFRWQj9X54PTT7xf3PpD5obe3-ocipmI";
 
 export const CAPEX_TABLE_PROMPT =
-  "Make one table with Factual data only to show project status of company- Get the latest verified data( Announcement , Annual report , Call transcript , earnings PPT) possible .Follow the column order exactly.-Serial No. | Project | Segment | Capex | Current timeline note | Current status | Latest timing view ( with dates if available ) | Capacity addition | Source Do not add extra columns. Do not merge columns. Do not explain outside the table.";
+  "Make one table with Factual data only to show project status of company- Get the latest verified data( Announcement , Annual report , Call transcript , earnings PPT) possible .Follow the column order exactly.-Serial No. | Project | Segment | Capex | Current timeline note | Current status | Latest timing view ( with dates if available ) | Capacity addition | Source Do not add extra columns. Do not merge columns. Do not explain outside the table. The Capex column MUST always be present for every row. Always express Capex in INR crore (Rs cr) as a plain number (e.g. 18000), or '~Rs 18,000 cr'. If the company has not disclosed a project-level capex, write 'Not disclosed' in the Capex cell — never omit, blank, or drop the Capex column.";
 
 export const SUBSIDIARY_TABLE_PROMPT =
   "Make one table only with factual datas and Dates to show subsidiaries and future upside of the company . Get the latest verified data ( Announcement , Annual report , Call transcript , earnings PPT) Do not add notes outside the table.use clear and simple language .Do not add extra columns. Do not merge columns. Do not explain outside the table. Follow this column order exactly: Serial no. | Name | Business | Stake | Current Status| Next date of progress | Revenue stage | Strategic link | Source";
@@ -233,6 +233,25 @@ const parseCapexCr = (raw: string): number => {
   return Math.round(num);
 };
 
+// Scans free text for the first capex-shaped phrase (e.g. "Rs 18,000 crore",
+// "USD 2 bn", "₹12000 cr"). Returns 0 if nothing capex-like is found, so
+// non-monetary numbers like "20 GW" or "30 GWh" don't get misread.
+const CAPEX_PHRASE_RE =
+  /(?:rs\.?|inr|₹|us\$|usd|\$)\s*([\d,]+(?:\.\d+)?)\s*(crore|cr|lakh|billion|bn|million|mn)?|([\d,]+(?:\.\d+)?)\s*(crore|cr|lakh|billion|bn|million|mn)\b/i;
+
+const scanRowForCapex = (row: string[], skipIdx: number[]): number => {
+  for (let i = 0; i < row.length; i += 1) {
+    if (skipIdx.includes(i)) continue;
+    const cell = row[i] || "";
+    const match = cell.match(CAPEX_PHRASE_RE);
+    if (!match) continue;
+    const phrase = match[0];
+    const value = parseCapexCr(phrase);
+    if (value > 0) return value;
+  }
+  return 0;
+};
+
 const findColumnIndex = (columns: string[], ...needles: string[]): number => {
   for (let i = 0; i < columns.length; i += 1) {
     const c = columns[i].toLowerCase();
@@ -353,15 +372,28 @@ export const toCapexProjects = (table: ParsedTable): CapexProject[] => {
 
   const cell = (row: string[], idx: number) => (idx >= 0 ? row[idx] || "" : "");
 
+  // Cells we shouldn't scan as capex fallbacks — capacity additions like
+  // "20 GW" or status text like "FY26" would otherwise be misread.
+  const fallbackSkip = [
+    projectIdx,
+    segmentIdx,
+    capexIdx,
+    statusIdx,
+    timingIdx,
+    capacityIdx,
+  ].filter((i) => i >= 0);
+
   return table.rows
     .filter((row) => cell(row, projectIdx).trim().length > 0)
     .map((row, idx) => {
       const project = cell(row, projectIdx);
+      const direct = parseCapexCr(cell(row, capexIdx));
+      const capexRsCr = direct > 0 ? direct : scanRowForCapex(row, fallbackSkip);
       return {
         id: `${idx + 1}-${slugify(project)}`,
         project,
         segment: cell(row, segmentIdx) || "—",
-        capexRsCr: parseCapexCr(cell(row, capexIdx)),
+        capexRsCr,
         timelineNote: cell(row, timelineIdx) || "—",
         status: mapStatus(cell(row, statusIdx)),
         timingView: mapTiming(cell(row, timingIdx)),
