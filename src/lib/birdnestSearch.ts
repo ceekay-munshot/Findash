@@ -1,4 +1,10 @@
-import { BIRDNEST_BASE_URL, MUNS_BEARER_TOKEN } from "./munsConfig";
+import { MUNS_TOKEN } from "../utils/muns";
+
+// In dev, requests go through Vite's proxy under /muns to avoid CORS.
+// In prod, they hit Birdnest directly.
+const BIRDNEST_BASE_URL = import.meta.env.DEV
+  ? "/muns"
+  : "https://birdnest.muns.io";
 
 export type BirdnestEntry = {
   ticker: string;
@@ -45,7 +51,7 @@ export async function searchBirdnest(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${MUNS_BEARER_TOKEN}`,
+      Authorization: `Bearer ${MUNS_TOKEN}`,
     },
     body: JSON.stringify({ query: q }),
     signal,

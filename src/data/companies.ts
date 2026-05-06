@@ -443,24 +443,6 @@ export function findCompany(query: string): Company {
   };
 }
 
-export function companyFromBirdnest(entry: {
-  ticker: string;
-  name: string;
-  industry: string;
-}): Company {
-  const seeded = companies.find(
-    (c) => c.ticker.toLowerCase() === entry.ticker.toLowerCase(),
-  );
-  if (seeded) return seeded;
-  return {
-    ...companies[0],
-    id: `mock-${entry.ticker.toLowerCase()}`,
-    name: entry.name,
-    ticker: entry.ticker,
-    sector: entry.industry || companies[0].sector,
-  };
-}
-
 function titleCase(s: string) {
   return s
     .split(/\s+/)
