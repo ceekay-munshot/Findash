@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { SearchBar } from "./components/SearchBar";
 import { CompanyHeader } from "./components/CompanyHeader";
 import { Tabs } from "./components/Tabs";
 import { CapexTracker } from "./components/CapexTracker";
 import { SubsidiaryTracker } from "./components/SubsidiaryTracker";
 import { MunsChat } from "./components/MunsChat";
-import { findCompany } from "./data/companies";
+import { companyFromBirdnest, findCompany } from "./data/companies";
 
 const TABS = [
   { id: "capex", label: "Capex Tracker" },
@@ -14,10 +14,8 @@ const TABS = [
 ];
 
 function App() {
-  const [query, setQuery] = useState("Reliance");
+  const [company, setCompany] = useState(() => findCompany("Reliance"));
   const [active, setActive] = useState("capex");
-
-  const company = useMemo(() => findCompany(query), [query]);
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -27,7 +25,10 @@ function App() {
             Findash · Company Dashboard
           </div>
           <div className="mt-4 max-w-2xl">
-            <SearchBar value={query} onSubmit={setQuery} />
+            <SearchBar
+              value={company.name}
+              onSelect={(entry) => setCompany(companyFromBirdnest(entry))}
+            />
           </div>
         </div>
 
