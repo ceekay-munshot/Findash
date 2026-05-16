@@ -2,6 +2,9 @@ name = "findash"
 main = "worker/index.ts"
 compatibility_date = "2026-05-16"
 
+[build]
+command = "npm run build"
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
