@@ -1,4 +1,6 @@
-const BIRDNEST_BASE_URL = "/api/muns/birdnest";
+import { MUNS_USER_INDEX } from "../utils/muns";
+
+const STOCK_SEARCH_URL = "/api/muns/stock/search";
 
 export type BirdnestEntry = {
   ticker: string;
@@ -41,17 +43,17 @@ export async function searchBirdnest(
   const q = query.trim();
   if (!q) return [];
 
-  const res = await fetch(`${BIRDNEST_BASE_URL}/stock/search`, {
+  const res = await fetch(STOCK_SEARCH_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ query: q }),
+    body: JSON.stringify({ query: q, user_index: MUNS_USER_INDEX }),
     signal,
   });
 
   if (!res.ok) {
-    throw new Error(`Birdnest search failed (${res.status})`);
+    throw new Error(`Stock search failed (${res.status})`);
   }
 
   const json = (await res.json()) as BirdnestResponse;

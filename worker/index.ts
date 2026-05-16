@@ -4,7 +4,7 @@ interface Env {
 }
 
 const MUNS_CHAT_UPSTREAM = "https://devde.muns.io/chat/chat-muns";
-const BIRDNEST_UPSTREAM = "https://birdnest.muns.io";
+const STOCK_SEARCH_UPSTREAM = "https://devde.muns.io/stock/search";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -14,9 +14,8 @@ export default {
       return proxy(request, env, MUNS_CHAT_UPSTREAM);
     }
 
-    if (url.pathname.startsWith("/api/muns/birdnest/")) {
-      const target = BIRDNEST_UPSTREAM + url.pathname.slice("/api/muns/birdnest".length) + url.search;
-      return proxy(request, env, target);
+    if (url.pathname === "/api/muns/stock/search") {
+      return proxy(request, env, STOCK_SEARCH_UPSTREAM);
     }
 
     return env.ASSETS.fetch(request);
