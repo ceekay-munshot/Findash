@@ -2,9 +2,8 @@ import { useMemo, useState } from "react";
 import { TableShell } from "./TableShell";
 import { Tag } from "./StatusTag";
 
-const MUNS_CHAT_URL = "https://devde.muns.io/chat/chat-muns";
-const MUNS_TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ZWE5ZGMyYi0xZDBmLTQ2MzctOGE2Ny0wM2VhNzFmMGYyY2YiLCJlbWFpbCI6Im5hZGFtc2FsdWphQGdtYWlsLmNvbSIsIm9yZ0lkIjoiMSIsImF1dGhvcml0eSI6InVzZXIiLCJpYXQiOjE3NzY2NzkyMzgsImV4cCI6MTc3NzExMTIzOH0.DjD6IxGL5EJ4mWeXO8bj8vpBNx0RaipmzBqDDbfqEdg";
+const MUNS_CHAT_URL = "/api/muns/chat";
+const MUNS_USER_INDEX = 124;
 
 const DEFAULT_QUERY = "hey this is a test chat tell me about ceo of google";
 
@@ -425,10 +424,10 @@ export function MunsChat() {
         method: "POST",
         headers: {
           accept: "*/*",
-          Authorization: `Bearer ${MUNS_TOKEN}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          user_index: MUNS_USER_INDEX,
           tasks: [task],
           query_context: {
             ANNOUNCEMENT_FORM_TYPE: "all",
