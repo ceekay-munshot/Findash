@@ -9,10 +9,9 @@ import type {
 
 // -------------------- Config --------------------
 
-export const MUNS_CHAT_URL = "https://devde.muns.io/chat/chat-muns";
+export const MUNS_CHAT_URL = "/api/muns/chat";
 
-export const MUNS_TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ZWE5ZGMyYi0xZDBmLTQ2MzctOGE2Ny0wM2VhNzFmMGYyY2YiLCJlbWFpbCI6Im5hZGFtc2FsdWphQGdtYWlsLmNvbSIsIm9yZ0lkIjoiMSIsImF1dGhvcml0eSI6ImFkbWluIiwiaWF0IjoxNzc4NDM0MDY4LCJleHAiOjE3Nzg4NjYwNjh9.uqQ3uVj2JcwpF3eoaZ2VZ5kMaa2U1Pm47nC9ejHo1rQ";
+export const MUNS_USER_INDEX = 124;
 
 export const CAPEX_TABLE_PROMPT =
   "Make one table with Factual data only to show project status of company- Get the latest verified data( Announcement , Annual report , Call transcript , earnings PPT) possible .Follow the column order exactly.-Serial No. | Project | Segment | Capex | Current timeline note | Current status | Latest timing view ( with dates if available ) | Capacity addition | Source Do not add extra columns. Do not merge columns. Do not explain outside the table. The Capex column MUST always be present for every row. Always express Capex in INR crore (Rs cr) as a plain number (e.g. 18000), or '~Rs 18,000 cr'. If the company has not disclosed a project-level capex, write 'Not disclosed' in the Capex cell — never omit, blank, or drop the Capex column.";
@@ -34,6 +33,7 @@ export interface MunsChatInput {
 
 export async function callMunsChat(input: MunsChatInput): Promise<string> {
   const body = {
+    user_index: MUNS_USER_INDEX,
     tasks: input.tasks,
     query_context: {
       ...(input.tickerSymbol ? { TICKER_SYMBOL: [input.tickerSymbol] } : {}),
@@ -59,7 +59,6 @@ export async function callMunsChat(input: MunsChatInput): Promise<string> {
     method: "POST",
     headers: {
       accept: "*/*",
-      Authorization: `Bearer ${MUNS_TOKEN}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
